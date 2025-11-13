@@ -1,8 +1,7 @@
-import knowledgeBase from "@/data/barobill-knowledge-base.json";
-import chatbotDataset from "@/data/barobill-chatbot-dataset.json";
-import casesKnowledgeBase from "@/data/barobill-knowledge-base.cases.v3.json";
+import unifiedData from "@/data/unified-knowledge.json";
 
-export type ToneType = "formal" | "casual";
+// 사용자가 설정 가능한 어투 타입
+export type ToneType = "formal" | "casual" | "plain";
 
 interface MatchResult {
   found: boolean;
@@ -10,231 +9,129 @@ interface MatchResult {
   relatedGuides?: Array<{
     title: string;
     url: string;
-    description: string;
-    icon: string;
+    description?: string;
+    icon?: string;
   }>;
   followUpQuestions?: string[];
+  score: number;
   requiresAI?: boolean;
   query?: string;
 }
 
-// Normalize text for comparison (more aggressive for flexible matching)
+/**
+ * 1. 텍스트 정규화: 띄어쓰기 제거, 소문자 변환, 특수문자 제거
+ * 예: "세금계산서 발급 어떻게 해?" -> "세금계산서발급어떻게해"
+ */
 const normalizeText = (text: string): string => {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[!?.,;:]/g, "") // Remove punctuation
-    .replace(/\s+/g, " "); // Normalize whitespace
+  return text.toLowerCase().replace(/[\s,.\?!~]/g, "");
 };
 
-// Check if query contains any of the keywords (flexible partial matching)
-const containsKeywords = (query: string, keywords: string[]): boolean => {
+/**
+ * 2. 질문 확장: 동의어를 포함한 키워드 리스트 생성
+ * 예: 질문에 "반품"이 있으면 -> ["반품", "환입", "환불", "리턴", "반환"] 모두 검색 대상에 포함
+ */
+const getExpandedKeywords = (query: string): string[] => {
   const normalizedQuery = normalizeText(query);
-  return keywords.some((keyword) => {
-    const normalizedKeyword = normalizeText(keyword);
-    // Support partial matching: "안녕" matches "안녕하세요"
-    return normalizedQuery.includes(normalizedKeyword) || 
-           normalizedKeyword.includes(normalizedQuery);
-  });
-};
+  // 기본 질문을 포함
+  let keywords = [normalizedQuery];
+  
+  const synonyms = unifiedData.synonyms as Record<string, string[]>;
+  
+  Object.keys(synonyms).forEach(key => {
+    const normalizedKey = normalizeText(key);
+    // 질문에 '대표어'가 있거나 '동의어' 중 하나라도 있으면
+    const hasKey = normalizedQuery.includes(normalizedKey);
+    const hasSynonym = synonyms[key].some(s => normalizedQuery.includes(normalizeText(s)));
 
-// Extract synonyms from dataset (including cases knowledge base)
-const getSynonyms = (word: string): string[] => {
-  const datasetSynonyms = (chatbotDataset as any).nlu?.synonyms || {};
-  const casesSynonyms = (casesKnowledgeBase as any).synonyms || {};
-  
-  // Merge synonyms from both sources
-  const allSynonyms = { ...datasetSynonyms, ...casesSynonyms };
-  
-  // Find the key that contains this word
-  for (const [key, values] of Object.entries(allSynonyms)) {
-    if (normalizeText(key) === normalizeText(word) || 
-        (Array.isArray(values) && values.some(v => normalizeText(v) === normalizeText(word)))) {
-      return [key, ...(Array.isArray(values) ? values : [])];
+    if (hasKey || hasSynonym) {
+      // 대표어와 동의어 모두를 검색 키워드에 추가
+      keywords.push(normalizedKey);
+      synonyms[key].forEach(s => keywords.push(normalizeText(s)));
     }
-  }
+  });
   
-  return [word];
+  return [...new Set(keywords)]; // 중복 제거
 };
 
-// Expand query with synonyms
-const expandQueryWithSynonyms = (query: string): string[] => {
-  const words = query.split(" ");
-  const expandedQueries = [query];
-  
-  words.forEach(word => {
-    const synonyms = getSynonyms(word);
-    synonyms.forEach(synonym => {
-      if (synonym !== word) {
-        expandedQueries.push(query.replace(word, synonym));
+/**
+ * 3. 매칭 엔진: 점수 기반으로 최적의 답변 찾기
+ */
+export const matchQuery = (query: string, tone: ToneType): MatchResult => {
+  const expandedQueryKeywords = getExpandedKeywords(query); // 확장된 질문 키워드들
+  const normalizedQuery = normalizeText(query);
+
+  let bestMatch: any = null;
+  let maxScore = 0;
+
+  unifiedData.items.forEach((item) => {
+    let score = 0;
+    
+    // (1) 키워드 매칭 점수 계산
+    // 아이템의 키워드가 확장된 질문 키워드 리스트에 포함되어 있는지 확인
+    item.keywords.forEach((k) => {
+      const normalizedItemKeyword = normalizeText(k);
+      // 질문(또는 확장된 동의어)이 아이템의 키워드를 포함하고 있다면 점수 부여
+      if (expandedQueryKeywords.some(qKey => qKey.includes(normalizedItemKeyword))) {
+        score += 10; // 매칭된 키워드 하나당 10점
       }
     });
-  });
-  
-  return expandedQueries;
-};
 
-// Match query against intents, knowledge base, and dataset
-export const matchQuery = (query: string, tone: ToneType): MatchResult => {
-  const kb = knowledgeBase as any;
-  const dataset = chatbotDataset as any;
-  const casesKb = casesKnowledgeBase as any;
-  const expandedQueries = expandQueryWithSynonyms(query);
-  
-  // PRIORITY 1: Check intents first (for greetings, system commands, etc.)
-  const intents = dataset.intents || [];
-  for (const intent of intents) {
-    const patterns = intent.patterns || [];
-    
-    for (const expandedQuery of expandedQueries) {
-      if (containsKeywords(expandedQuery, patterns)) {
-        const responseType = tone === "formal" ? "polite" : "casual";
-        const response = intent.response?.[responseType] || intent.response?.polite;
-        
-        if (response) {
-          return {
-            found: true,
-            response: response,
-            relatedGuides: [],
-            followUpQuestions: [],
-          };
-        }
-      }
+    // (2) 제목(Title) 정확도 가산점
+    // 질문이 제목을 직접적으로 포함하면 큰 점수 부여
+    if (item.title && normalizedQuery.includes(normalizeText(item.title))) {
+      score += 20;
     }
-  }
-  
-  // PRIORITY 2: Try cases knowledge base (high priority for specific tax cases)
-  const casesKnowledgeBaseItems = casesKb.knowledge_base || [];
-  let bestMatch: { score: number; result: MatchResult | null } = { score: 0, result: null };
-  
-  for (const item of casesKnowledgeBaseItems) {
-    const patterns = item.patterns || [];
-    
-    for (const expandedQuery of expandedQueries) {
-      // Calculate match score based on pattern matches
-      let matchScore = 0;
-      
-      for (const pattern of patterns) {
-        if (containsKeywords(expandedQuery, [pattern])) {
-          matchScore += 1;
-          // Boost score for high priority items
-          if (item.priority === "high") matchScore += 2;
-          else if (item.priority === "mid") matchScore += 1;
-        }
-      }
-      
-      if (matchScore > bestMatch.score) {
-        const responseType = tone === "formal" ? "formal" : "casual";
-        const templateResponse = item.answer?.template?.[responseType];
-        
-        if (templateResponse) {
-          bestMatch = {
-            score: matchScore,
-            result: {
-              found: true,
-              response: templateResponse,
-              relatedGuides: item.answer?.links?.map((link: any) => ({
-                title: link.title || "관련 링크",
-                url: link.url || "#",
-                description: link.description || "",
-                icon: "📄",
-              })) || [],
-              followUpQuestions: [],
-            }
-          };
-        }
-      }
+
+    // (3) 우선순위(Priority) 가산점
+    // case(사례)는 knowledge(일반지식)보다 우선순위를 높게 설정하여 구체적 질문에 대응
+    if (item.priority) {
+      score += item.priority;
     }
-  }
-  
-  // If we found a good match in cases knowledge base, return it
-  if (bestMatch.score > 0 && bestMatch.result) {
-    return bestMatch.result;
-  }
-  
-  // PRIORITY 3: Try to find a match in original knowledge_base
-  for (const [, item] of Object.entries(kb.knowledge_base || {})) {
-    const entry = item as any;
-    
-    // Collect all keywords
-    const allKeywords = [
-      ...(entry.keywords?.primary || []),
-      ...(entry.keywords?.secondary || []),
-      ...(entry.keywords?.related || []),
-    ];
-    
-    // Check if any expanded query matches
-    for (const expandedQuery of expandedQueries) {
-      if (containsKeywords(expandedQuery, allKeywords)) {
-        const responseType = tone === "formal" ? "formal" : "casual";
-        const response = entry.responses?.[responseType];
-        
-        if (response) {
-          const fullResponse = [
-            response.greeting,
-            response.content,
-            response.closing,
-          ].filter(Boolean).join("\n\n");
-          
-          return {
-            found: true,
-            response: fullResponse,
-            relatedGuides: entry.related_guides || [],
-            followUpQuestions: entry.common_followups || [],
-          };
-        }
-      }
+
+    // 최고 점수 갱신
+    if (score > maxScore) {
+      maxScore = score;
+      bestMatch = item;
     }
+  });
+
+  // (4) 임계점(Threshold): 점수가 너무 낮으면(예: 15점 미만) 답변하지 않고 AI로 넘김
+  if (maxScore < 15 || !bestMatch) {
+    return { 
+      found: false, 
+      score: 0,
+      requiresAI: true,
+      query: query,
+      response: "죄송합니다. 해당 질문에 대한 답변을 찾지 못했습니다. AI가 답변을 생성 중입니다..."
+    };
   }
-  
-  // PRIORITY 4: Try to find match in chatbot_dataset qa_pairs
-  const qaPairs = dataset.qa_pairs || [];
-  
-  for (const pair of qaPairs) {
-    const allKeywords = [
-      ...(pair.keywords || []),
-      ...(pair.synonyms || []),
-    ];
-    
-    for (const expandedQuery of expandedQueries) {
-      if (containsKeywords(expandedQuery, allKeywords)) {
-        const answer = tone === "formal" ? pair.answer_polite : pair.answer_casual;
-        
-        if (answer) {
-          return {
-            found: true,
-            response: answer,
-            relatedGuides: pair.related_links || [],
-            followUpQuestions: pair.follow_up || [],
-          };
-        }
-      }
-    }
-  }
-  
-  // PRIORITY 5: Return fallback - request AI assistance
-  const fallbacks = dataset.fallbacks || {};
-  const fallbackMessages = fallbacks.out_of_scope || 
-    "죄송합니다. 해당 질문에 대한 답변을 찾지 못했습니다. 다른 방식으로 질문해 주시거나, 바로빌 고객센터(1600-6399)로 문의해 주세요. 📞";
-  
-  return { 
-    found: false,
-    requiresAI: true,
-    query: query,
-    response: fallbackMessages
+
+  // (5) 어투에 맞는 답변 반환 (없으면 formal을 기본값으로)
+  const responseText = bestMatch.responses[tone] || bestMatch.responses["formal"];
+
+  return {
+    found: true,
+    score: maxScore,
+    response: responseText,
+    relatedGuides: bestMatch.relatedGuides || [],
+    followUpQuestions: bestMatch.followUpQuestions || []
   };
 };
 
-// Detect tone from user input
+/**
+ * 사용자의 말투를 감지하여 톤을 추천해주는 함수
+ */
 export const detectTone = (query: string): ToneType => {
-  const casualMarkers = ["해", "야", "어", "음", "ㅋ", "ㅎ", "요 없이"];
-  const formalMarkers = ["습니다", "십시오", "세요", "요"];
+  // 반말 감지
+  if (query.includes("야") || query.includes("어") || query.includes("니") || query.includes("ㅋ")) {
+    return "casual";
+  }
   
-  const hasCasual = casualMarkers.some((marker) => query.includes(marker));
-  const hasFormal = formalMarkers.some((marker) => query.includes(marker));
+  // 존댓말 감지
+  if (query.includes("요") || query.includes("니다") || query.includes("세요") || query.includes("십시오")) {
+    return "formal";
+  }
   
-  if (hasCasual && !hasFormal) return "casual";
-  if (hasFormal && !hasCasual) return "formal";
-  
-  return "formal"; // Default to formal
+  // 기본값: formal
+  return "formal";
 };

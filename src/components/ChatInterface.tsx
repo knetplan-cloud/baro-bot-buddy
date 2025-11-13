@@ -17,8 +17,8 @@ interface Message {
   relatedGuides?: Array<{
     title: string;
     url: string;
-    description: string;
-    icon: string;
+    description?: string;
+    icon?: string;
   }>;
   followUpQuestions?: string[];
 }

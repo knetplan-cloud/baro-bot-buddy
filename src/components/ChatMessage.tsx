@@ -10,8 +10,8 @@ interface ChatMessageProps {
   relatedGuides?: Array<{
     title: string;
     url: string;
-    description: string;
-    icon: string;
+    description?: string;
+    icon?: string;
   }>;
   followUpQuestions?: string[];
   onQuestionClick?: (question: string) => void;
@@ -93,7 +93,7 @@ export const ChatMessage = ({
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {relatedGuides.slice(0, 2).map((guide, idx) => <Button key={idx} variant="outline" size="sm" className="text-xs h-auto py-2" onClick={() => window.open(guide.url, "_blank")}>
-                        <span className="mr-1">{guide.icon}</span>
+                        {guide.icon && <span className="mr-1">{guide.icon}</span>}
                         {guide.title}
                         <ExternalLink className="w-3 h-3 ml-1" />
                       </Button>)}
