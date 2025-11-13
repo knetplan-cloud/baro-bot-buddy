@@ -61,7 +61,7 @@ const Index = () => {
                 <ExternalLink className="w-4 h-4 mr-2" />
                 바로빌 바로가기
               </Button>
-              <Button variant="outline" className="w-full" size="lg" onClick={() => window.open("https://www.barobill.co.kr/api", "_blank")}>
+              <Button variant="outline" className="w-full" size="lg" onClick={() => window.open("https://dev.barobill.co.kr", "_blank")}>
                 <ExternalLink className="w-4 h-4 mr-2" />
                 바로빌 API 연동하기
               </Button>

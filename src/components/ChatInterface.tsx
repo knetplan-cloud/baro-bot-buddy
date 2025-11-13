@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, ExternalLink } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { QuickQuestionButton } from "./QuickQuestionButton";
 import { matchQuery, detectTone, type ToneType } from "@/lib/chatbot-engine";
@@ -14,6 +14,13 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  relatedGuides?: Array<{
+    title: string;
+    url: string;
+    description: string;
+    icon: string;
+  }>;
+  followUpQuestions?: string[];
 }
 
 interface ChatInterfaceProps {
@@ -34,8 +41,8 @@ export const ChatInterface = ({ tone }: ChatInterfaceProps) => {
       role: "assistant",
       content:
         tone === "formal"
-          ? "안녕하세요, 바로빌 AI 상담사입니다. 세금계산서 발급 및 세무 관련 궁금하신 사항을 편하게 질문해주세요."
-          : "안녕! 바로빌 AI야. 세금계산서나 세무 관련해서 궁금한 거 있으면 편하게 물어봐!",
+          ? "안녕하세요! 😊 바로빌 AI 빌리입니다.\n세금계산서 발급 및 세무 관련 궁금하신 사항을 편하게 질문해주세요!"
+          : "안녕! 😊 바로빌 AI 빌리야.\n세금계산서나 세무 관련해서 궁금한 거 있으면 편하게 물어봐!",
       timestamp: new Date(),
     },
   ]);
@@ -77,21 +84,12 @@ export const ChatInterface = ({ tone }: ChatInterfaceProps) => {
         role: "assistant",
         content: result.response,
         timestamp: new Date(),
+        relatedGuides: result.relatedGuides,
+        followUpQuestions: result.followUpQuestions,
       };
       
       setMessages((prev) => [...prev, assistantMsg]);
       setIsTyping(false);
-
-      // Show related guides if available
-      if (result.relatedGuides && result.relatedGuides.length > 0) {
-        toast.info("관련 가이드가 있습니다", {
-          description: result.relatedGuides[0].title,
-          action: {
-            label: "보기",
-            onClick: () => window.open(result.relatedGuides![0].url, "_blank"),
-          },
-        });
-      }
     } else {
       // Use GPT API fallback for unmatched queries
       const fallbackMsg: Message = {
@@ -99,8 +97,8 @@ export const ChatInterface = ({ tone }: ChatInterfaceProps) => {
         role: "assistant",
         content:
           finalTone === "formal"
-            ? "죄송합니다. 해당 질문에 대한 정보를 찾지 못했습니다. 좀 더 구체적으로 질문해주시거나, 바로빌 고객센터(1544-8385)로 문의해주시기 바랍니다."
-            : "미안! 그 질문은 아직 잘 모르겠어. 좀 더 자세히 물어봐주거나, 바로빌 고객센터(1544-8385)로 연락해봐!",
+            ? "죄송합니다! 😢 해당 질문에 대한 정보를 찾지 못했습니다.\n좀 더 구체적으로 질문해주시거나, 바로빌 고객센터(1544-8385)로 문의해주시기 바랍니다."
+            : "미안! 😅 그 질문은 아직 잘 모르겠어.\n좀 더 자세히 물어봐주거나, 바로빌 고객센터(1544-8385)로 연락해봐!",
         timestamp: new Date(),
       };
 
@@ -130,12 +128,55 @@ export const ChatInterface = ({ tone }: ChatInterfaceProps) => {
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
         {messages.map((message) => (
-          <ChatMessage
-            key={message.id}
-            role={message.role}
-            content={message.content}
-            timestamp={message.timestamp}
-          />
+          <div key={message.id}>
+            <ChatMessage
+              role={message.role}
+              content={message.content}
+              timestamp={message.timestamp}
+            />
+            
+            {/* Related Guides */}
+            {message.relatedGuides && message.relatedGuides.length > 0 && (
+              <div className="ml-14 mb-4 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  📚 관련 가이드
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {message.relatedGuides.map((guide, idx) => (
+                    <Button
+                      key={idx}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-auto py-2"
+                      onClick={() => window.open(guide.url, "_blank")}
+                    >
+                      <span className="mr-1">{guide.icon}</span>
+                      {guide.title}
+                      <ExternalLink className="w-3 h-3 ml-1" />
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Follow-up Questions */}
+            {message.followUpQuestions && message.followUpQuestions.length > 0 && (
+              <div className="ml-14 mb-4 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                  💡 이런 것도 궁금하신가요?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {message.followUpQuestions.map((question, idx) => (
+                    <QuickQuestionButton
+                      key={idx}
+                      question={question}
+                      onClick={handleQuickQuestion}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         ))}
         {isTyping && (
           <ChatMessage
@@ -148,10 +189,13 @@ export const ChatInterface = ({ tone }: ChatInterfaceProps) => {
         <div ref={scrollRef} />
       </ScrollArea>
 
-      {/* Quick Questions */}
-      {messages.length <= 1 && (
-        <div className="px-4 pb-3 space-y-2">
-          <p className="text-xs text-muted-foreground">빠른 질문:</p>
+      {/* Input */}
+      <div className="p-4 border-t border-border space-y-3">
+        {/* Quick Questions - Always visible */}
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            ⚡ 빠른 질문
+          </p>
           <div className="flex flex-wrap gap-2">
             {quickQuestions.map((question, index) => (
               <QuickQuestionButton
@@ -162,10 +206,7 @@ export const ChatInterface = ({ tone }: ChatInterfaceProps) => {
             ))}
           </div>
         </div>
-      )}
-
-      {/* Input */}
-      <div className="p-4 border-t border-border">
+        
         <form
           onSubmit={(e) => {
             e.preventDefault();

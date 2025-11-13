@@ -93,7 +93,7 @@ export const matchQuery = (query: string, tone: ToneType): MatchResult => {
             found: true,
             response: fullResponse,
             relatedGuides: entry.related_guides || [],
-            followUpQuestions: entry.follow_up_questions || [],
+            followUpQuestions: entry.common_followups || [],
           };
         }
       }
