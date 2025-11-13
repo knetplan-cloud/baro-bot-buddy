@@ -7,9 +7,16 @@ import { SettingsPanel } from "@/components/SettingsPanel";
 import { type ToneType } from "@/lib/chatbot-engine";
 import { ExternalLink, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import knowledgeBase from "@/data/barobill-knowledge-base.json";
+import unifiedData from "@/data/unified-knowledge.json";
 
-const faqs = knowledgeBase.faqs || [];
+// Convert items to FAQ format
+const faqs = unifiedData.items
+  .filter(item => item.type === "knowledge" || item.type === "case")
+  .map(item => ({
+    question: item.title,
+    answer: item.responses.formal,
+    category: item.category
+  }));
 const Index = () => {
   const [tone, setTone] = useState<ToneType>("formal");
   const handleExportChat = () => {
