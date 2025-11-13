@@ -5,8 +5,9 @@ import { ChatInterface } from "@/components/ChatInterface";
 import { FAQSection } from "@/components/FAQSection";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { type ToneType } from "@/lib/chatbot-engine";
-import { ExternalLink, Sparkles } from "lucide-react";
+import { ExternalLink, Sparkles, Settings } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import unifiedData from "@/data/unified-knowledge.json";
 
 // Convert items to FAQ format
@@ -18,6 +19,7 @@ const faqs = unifiedData.items
     category: item.category
   }));
 const Index = () => {
+  const navigate = useNavigate();
   const [tone, setTone] = useState<ToneType>("formal");
   const handleExportChat = () => {
     toast.success("대화 내용을 PDF로 저장 중입니다...");
@@ -71,6 +73,10 @@ const Index = () => {
               <Button variant="outline" className="w-full" size="lg" onClick={() => window.open("https://dev.barobill.co.kr", "_blank")}>
                 <ExternalLink className="w-4 h-4 mr-2" />
                 바로빌 API 연동하기
+              </Button>
+              <Button variant="secondary" className="w-full" size="lg" onClick={() => navigate("/admin")}>
+                <Settings className="w-4 h-4 mr-2" />
+                지식베이스 관리
               </Button>
             </div>
 
