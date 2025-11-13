@@ -19,12 +19,12 @@ const Index = () => {
   return <div className="min-h-screen gradient-bg p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         {/* Hero Section */}
-        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 text-center mb-8 shadow-[var(--shadow-strong)]">
-          <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-primary to-primary-dark rounded-3xl flex items-center justify-center text-5xl shadow-[var(--shadow-soft)]">
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl p-6 text-center mb-6 shadow-[var(--shadow-strong)]">
+          <div className="w-16 h-16 mx-auto mb-3 bg-gradient-to-br from-primary to-primary-dark rounded-3xl flex items-center justify-center text-4xl shadow-[var(--shadow-soft)]">
             🤖
           </div>
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">바로빌 AI 빌리</h1>
-          <p className="text-lg text-muted-foreground mb-4">
+          <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">바로빌 AI 빌리</h1>
+          <p className="text-base text-muted-foreground mb-3">
             세금 고민, 이제 빌리와 함께 해결하세요!
           </p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -34,7 +34,7 @@ const Index = () => {
         </div>
 
         {/* Main Content */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-[1fr_280px] gap-6">
           <div className="lg:col-span-2">
             <Tabs defaultValue="chat" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">

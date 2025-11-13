@@ -67,7 +67,7 @@ export const ChatMessage = ({ role, content, timestamp, isTyping, relatedGuides,
                     📚 관련 가이드
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {relatedGuides.map((guide, idx) => (
+                    {relatedGuides.slice(0, 2).map((guide, idx) => (
                       <Button
                         key={idx}
                         variant="outline"
@@ -91,7 +91,7 @@ export const ChatMessage = ({ role, content, timestamp, isTyping, relatedGuides,
                     💡 이런 것도 궁금하신가요?
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {followUpQuestions.map((question, idx) => (
+                    {followUpQuestions.slice(0, 2).map((question, idx) => (
                       <QuickQuestionButton
                         key={idx}
                         question={question}

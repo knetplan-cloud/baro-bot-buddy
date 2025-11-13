@@ -25,8 +25,9 @@ export const FAQSection = ({ faqs }: FAQSectionProps) => {
 
   // Filter FAQs based on search query and active tab
   const filteredFaqs = useMemo(() => {
-    let filtered = faqs.filter(faq => faq.category === activeTab);
+    let filtered = faqs;
     
+    // If there's a search query, search across all tabs
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -34,6 +35,9 @@ export const FAQSection = ({ faqs }: FAQSectionProps) => {
           faq.question.toLowerCase().includes(query) ||
           faq.answer.toLowerCase().includes(query)
       );
+    } else {
+      // If no search query, filter by active tab
+      filtered = filtered.filter(faq => faq.category === activeTab);
     }
     
     return filtered;
@@ -55,6 +59,13 @@ export const FAQSection = ({ faqs }: FAQSectionProps) => {
     setCurrentPage(page);
     // Scroll to top of FAQ section
     document.getElementById('faq-section')?.scrollIntoView({ behavior: 'smooth' });
+    // Close all accordions by resetting the Accordion component
+    const accordionTriggers = document.querySelectorAll('[data-state="open"]');
+    accordionTriggers.forEach((trigger) => {
+      if (trigger instanceof HTMLElement) {
+        trigger.click();
+      }
+    });
   };
 
   return (
@@ -96,7 +107,7 @@ export const FAQSection = ({ faqs }: FAQSectionProps) => {
                         <span className="font-medium">{faq.question}</span>
                       </AccordionTrigger>
                       <AccordionContent className="px-4 pb-4">
-                        <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
                           {faq.answer}
                         </p>
                       </AccordionContent>
