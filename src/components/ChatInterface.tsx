@@ -86,7 +86,7 @@ export const ChatInterface = ({
           🤖
         </div>
         <div>
-          <h3 className="font-bold">바로빌 전문 AI 빌리</h3>
+          <h3 className="font-bold">바로빌  AI 빌리</h3>
           <p className="text-xs opacity-90">세금계산서 발급 전문 상담</p>
         </div>
         <Sparkles className="ml-auto w-5 h-5" />
