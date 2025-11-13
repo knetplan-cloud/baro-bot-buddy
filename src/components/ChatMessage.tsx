@@ -49,11 +49,8 @@ export const ChatMessage = ({
             animationDelay: "300ms"
           }} />
             </div> : <>
-              <div className="text-sm leading-relaxed space-y-2">
+              <div className="text-sm space-y-2">
                 {content.split('\n\n').map((paragraph, idx) => {
-              // 넘버링 리스트 감지 (1. 2. 3. 등으로 시작)
-              const hasNumbering = /^\d+\./.test(paragraph.trim());
-
               // 대괄호로 감싸진 키워드 강조 처리 함수
               const highlightKeywords = (text: string) => {
                 const parts = text.split(/(\[.*?\])/g);
@@ -67,22 +64,24 @@ export const ChatMessage = ({
                   return part;
                 });
               };
+
+              // 넘버링 리스트 감지 (1. 2. 3. 등으로 시작)
+              const hasNumbering = /^\d+\./.test(paragraph.trim());
+              
               if (hasNumbering) {
                 // 넘버링 리스트는 각 항목에 작은 간격
                 return <div key={idx} className="space-y-1">
-                        {paragraph.split('\n').map((line, lineIdx) => <p key={lineIdx} className="text-indigo-950 font-medium">{highlightKeywords(line)}</p>)}
+                        {paragraph.split('\n').map((line, lineIdx) => 
+                          <p key={lineIdx} className="font-medium leading-relaxed whitespace-pre-wrap">
+                            {highlightKeywords(line)}
+                          </p>
+                        )}
                       </div>;
               } else {
-                // 일반 텍스트는 마침표 기준으로 문장 분리
-                const sentences = paragraph.split(/(?<=\.)\s+/).filter(s => s.trim());
-
-                // 기본 안내 문구인지 확인 (짧은 문장, 안내성 키워드 포함)
-                const isIntroText = sentences.length <= 2 && sentences.some(s => /안내|말씀|설명|도움|궁금|문의/.test(s));
-                return <div key={idx} className={isIntroText ? "space-y-0" : "space-y-0.5"}>
-                        {sentences.map((sentence, sIdx) => <p key={sIdx} className="leading-normal my-0">
-                            {highlightKeywords(sentence)}
-                          </p>)}
-                      </div>;
+                // 일반 단락은 whitespace-pre-wrap으로 원본 줄바꿈 유지
+                return <p key={idx} className="leading-relaxed whitespace-pre-wrap">
+                        {highlightKeywords(paragraph)}
+                      </p>;
               }
             })}
               </div>
