@@ -87,9 +87,9 @@ const Index = () => {
 
             {/* Info Card */}
             <div className="bg-muted/50 backdrop-blur-sm rounded-2xl p-4 text-sm">
-              <p className="font-semibold mb-2">📞 고객센터</p>
-              <p className="text-muted-foreground mb-1">1544-8385</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-semibold mb-2">📞 바로빌 고객센터</p>
+              <p className="mb-1 text-slate-700">1544-8385</p>
+              <p className="text-xs text-slate-700">
                 평일 09:00 - 18:00
               </p>
             </div>
