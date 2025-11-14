@@ -21,6 +21,7 @@ interface Message {
     icon?: string;
   }>;
   followUpQuestions?: string[];
+  relatedQuestions?: string[];
 }
 interface ChatInterfaceProps {
   tone: ToneType;
@@ -119,7 +120,8 @@ export const ChatInterface = ({
         content: result.response || (finalTone === "formal" ? "죄송합니다! 😢 해당 질문에 대한 정보를 찾지 못했습니다.\n좀 더 구체적으로 질문해주시거나, 바로빌 고객센터(1544-8385)로 문의해주시기 바랍니다." : "미안! 😅 그 질문은 아직 잘 모르겠어.\n좀 더 자세히 물어봐주거나, 바로빌 고객센터(1544-8385)로 연락해봐!"),
         timestamp: new Date(),
         relatedGuides: result.relatedGuides,
-        followUpQuestions: result.followUpQuestions
+        followUpQuestions: result.followUpQuestions,
+        relatedQuestions: result.relatedQuestions
       };
       setMessages(prev => [...prev, assistantMsg]);
     }
@@ -144,7 +146,7 @@ export const ChatInterface = ({
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">
-        {messages.map(message => <ChatMessage key={message.id} role={message.role} content={message.content} timestamp={message.timestamp} relatedGuides={message.relatedGuides} followUpQuestions={message.followUpQuestions} onQuestionClick={handleQuickQuestion} />)}
+        {messages.map(message => <ChatMessage key={message.id} role={message.role} content={message.content} timestamp={message.timestamp} relatedGuides={message.relatedGuides} followUpQuestions={message.followUpQuestions} relatedQuestions={message.relatedQuestions} onQuestionClick={handleQuickQuestion} />)}
         {isTyping && <ChatMessage role="assistant" content="" timestamp={new Date()} isTyping />}
         <div ref={scrollRef} />
       </ScrollArea>

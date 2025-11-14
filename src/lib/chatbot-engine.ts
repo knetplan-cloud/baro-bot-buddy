@@ -14,6 +14,7 @@ interface MatchResult {
     icon?: string;
   }>;
   followUpQuestions?: string[];
+  relatedQuestions?: string[];
   score: number;
   requiresAI?: boolean;
   query?: string;
@@ -159,7 +160,8 @@ export const matchQuery = (query: string, tone: ToneType): MatchResult => {
     score: maxScore,
     response: responseText,
     relatedGuides: bestMatch.relatedGuides || [],
-    followUpQuestions: bestMatch.followUpQuestions || []
+    followUpQuestions: bestMatch.followUpQuestions || [],
+    relatedQuestions: (bestMatch as any).relatedQuestions || []
   };
 };
 

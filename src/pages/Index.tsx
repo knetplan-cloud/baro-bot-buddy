@@ -9,15 +9,19 @@ import { ExternalLink, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import unifiedData from "@/data/barobill-knowledge.json";
+import faqData from "@/data/barobill-faq.json";
 
-// Convert items to FAQ format
-const faqs = unifiedData.items
-  .filter(item => item.type === "knowledge" || item.type === "case")
-  .map(item => ({
-    question: item.title,
-    answer: item.responses.formal,
-    category: item.category
-  }));
+// Convert FAQ items to FAQ format
+const faqs = faqData.items.map(item => ({
+  question: item.question,
+  category: item.category,
+  content: item.content || undefined,
+  answer: item.answer || undefined,  // 하위 호환성
+  images: item.images || undefined   // 하위 호환성
+}));
+
+// FAQ ID 목록 추출 (도움됨 수 조회용)
+const faqIds = faqData.items.map(item => item.id);
 const Index = () => {
   const navigate = useNavigate();
   const [tone, setTone] = useState<ToneType>("formal");
@@ -52,7 +56,7 @@ const Index = () => {
               </TabsContent>
               
               <TabsContent value="faq" className="bg-white/95 backdrop-blur-sm rounded-2xl p-6">
-                <FAQSection faqs={faqs} />
+                <FAQSection faqs={faqs} categories={faqData.categories} faqIds={faqIds} />
               </TabsContent>
             </Tabs>
           </div>

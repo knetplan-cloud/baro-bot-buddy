@@ -1,0 +1,9 @@
+# FAQ 이미지 디렉토리
+# 이 디렉토리에 FAQ에서 사용할 이미지 파일을 저장하세요.
+# 
+# 사용 예시:
+# - faq-tax-issuance-step1.png
+# - faq-certificate-register.png
+# 
+# 이미지 경로는 /faq-images/파일명 형식으로 사용합니다.
+

@@ -1,0 +1,206 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "updated_at": "2025-11-14",
+    "description": "바로빌 자주묻는질문 (FAQ)"
+  },
+  "categories": [
+    "세금계산서",
+    "인증서등록",
+    "바로빌서비스",
+    "세무정보"
+  ],
+  "items": [
+    {
+      "id": "faq_tax_issuance",
+      "question": "세금계산서 발급 방법은?",
+      "category": "세금계산서",
+      "order": 1,
+      "content": [
+        {
+          "type": "text",
+          "content": "세금계산서 발급은 [매출문서 작성] 메뉴에서 가능합니다.\n\n다음 단계를 따라주세요:"
+        },
+        {
+          "type": "image",
+          "src": "/faq-images/tax-issuance-menu.png",
+          "alt": "매출문서 작성 메뉴 화면",
+          "caption": "바로빌 메인 화면에서 '매출문서 작성' 메뉴를 선택하세요"
+        },
+        {
+          "type": "text",
+          "content": "**1단계: 로그인 및 메뉴 선택**\n\n바로빌에 로그인한 후, 좌측 메뉴에서 '세금계산서 발급'을 클릭합니다."
+        },
+        {
+          "type": "image",
+          "src": "/faq-images/tax-issuance-step1.png",
+          "alt": "세금계산서 발급 메뉴 선택 화면",
+          "caption": "세금계산서 발급 메뉴를 선택하면 발급 화면으로 이동합니다"
+        },
+        {
+          "type": "text",
+          "content": "**2단계: 공급받는자 정보 입력**\n\n공급받는자의 사업자등록번호, 상호명, 대표자명 등을 입력합니다.\n\n💡 **팁**: 사업자번호만 입력하면 자동으로 상호명과 주소가 조회됩니다."
+        },
+        {
+          "type": "image",
+          "src": "/faq-images/tax-issuance-step2.png",
+          "alt": "공급받는자 정보 입력 화면",
+          "caption": "사업자번호를 입력하면 자동으로 정보가 조회됩니다"
+        },
+        {
+          "type": "text",
+          "content": "**3단계: 품목 및 공급가액 입력**\n\n거래한 품목명, 수량, 단가를 입력하면 공급가액이 자동 계산됩니다.\n\n- 공급가액: 부가세 제외 금액\n- 부가세: 공급가액의 10%\n- 합계금액: 공급가액 + 부가세"
+        },
+        {
+          "type": "image",
+          "src": "/faq-images/tax-issuance-step3.png",
+          "alt": "품목 및 금액 입력 화면",
+          "caption": "품목 정보와 금액을 입력하세요"
+        },
+        {
+          "type": "text",
+          "content": "**4단계: 작성일자 및 발급일자 확인**\n\n작성일자는 거래가 발생한 날짜, 발급일자는 세금계산서를 발급하는 날짜입니다.\n\n⚠️ **주의**: 작성일자는 거래일과 동일해야 합니다."
+        },
+        {
+          "type": "image",
+          "src": "/faq-images/tax-issuance-step4.png",
+          "alt": "작성일자 및 발급일자 설정 화면",
+          "caption": "거래일과 발급일을 정확히 입력하세요"
+        },
+        {
+          "type": "text",
+          "content": "**5단계: 발급 및 전송**\n\n모든 정보를 확인한 후 '발급' 버튼을 클릭하면:\n\n✅ 국세청에 자동 전송\n✅ 공급받는자에게 알림 발송\n✅ 발급 완료\n\n발급 즉시 국세청에 자동 전송되며, 공급받는자에게도 이메일/SMS 알림이 전송됩니다."
+        },
+        {
+          "type": "image",
+          "src": "/faq-images/tax-issuance-step5.png",
+          "alt": "발급 완료 화면",
+          "caption": "발급 버튼 클릭 후 완료 화면"
+        },
+        {
+          "type": "text",
+          "content": "**완료!**\n\n세금계산서가 성공적으로 발급되었습니다. 발급 내역은 '발급내역 조회' 메뉴에서 확인할 수 있습니다."
+        }
+      ],
+      "relatedGuides": [
+        {
+          "title": "발급 가이드 보러가기",
+          "url": "https://www.barobill.co.kr/guide/issue",
+          "icon": "📘"
+        }
+      ],
+      "relatedKnowledgeId": "knowledge_tax_issuance"
+    },
+    {
+      "id": "faq_reverse_issuance",
+      "question": "역발행 세금계산서는 무엇인가요?",
+      "answer": "역발행은 공급받는자(매입자)가 세금계산서를 작성하고, 공급자가 승인하는 방식입니다.\n\n【절차】\n1. 공급받는자가 바로빌에서 역발행 세금계산서 작성\n2. 공급자에게 발급 요청 전송\n3. 공급자가 내용 확인 후 승인\n4. 승인 시 국세청에 자동 전송\n\n【장점】\n• 매입자가 직접 작성하여 정확도 향상\n• 공급자의 발급 업무 경감\n• 신속한 처리 가능",
+      "category": "세금계산서",
+      "order": 2,
+      "relatedKnowledgeId": "knowledge_reverse_issuance"
+    },
+    {
+      "id": "faq_modify_overview",
+      "question": "수정세금계산서 발급 사유는 무엇인가요?",
+      "answer": "수정세금계산서 발급 사유는 총 6가지입니다:\n\n① 기재사항착오정정: 작성일 고정, 2장(취소(-)+정정(+))\n② 이중발급: 착오 인식일, 1장(부(-))\n③ 공급가액변동: 변동일, 1장(증감액만 ±)\n④ 계약해제: 해제일, 1장(부(-))\n⑤ 환입(반품/환불): 확인일, 1장(부(-), 환입액 자동 '-')\n⑥ 내국신용장 사후개설: 개설일, 2장(개설분 부(-)+영세 정(+))",
+      "category": "세금계산서",
+      "order": 3,
+      "relatedKnowledgeId": "case_modify_overview"
+    },
+    {
+      "id": "faq_modify_return",
+      "question": "반품된 세금계산서는 어떻게 처리하나요?",
+      "answer": "기존 발급 건에 대해 반품이 발생했다면 [수정사유: 환입]으로 수정세금계산서를 발급해야 합니다.\n\n【발급 절차】\n1. 수정사유에서 '환입'을 선택합니다.\n2. 작성일자는 '반품이 확정된 날(환입일)'로 지정합니다.\n3. 반품된 금액만큼 부(-)의 금액을 입력하여 발행합니다.\n4. 바로빌 시스템이 자동으로 음수 처리합니다.\n\n신고 마감기한 내라면 별도의 가산세는 없습니다.",
+      "category": "세금계산서",
+      "order": 4,
+      "relatedGuides": [
+        {
+          "title": "취소(수정)세금계산서 가이드",
+          "url": "https://www.barobill.co.kr/blog/취소세금계산서",
+          "icon": "🔗"
+        }
+      ],
+      "relatedKnowledgeId": "case_modify_return"
+    },
+    {
+      "id": "faq_modify_error",
+      "question": "세금계산서 기재사항 오류를 수정하려면?",
+      "answer": "기재사항에 착오가 있어 정정하는 경우:\n\n【수정 사유】 기재사항착오정정\n【작성일자】 원본과 동일 (변경 불가)\n【발급 건수】 2장 (취소분 + 정정분)\n【금액 입력】\n  - 취소분: 원본 전액 부(-)\n  - 정정분: 올바른 내용으로 정(+)\n\n시스템이 자동으로 2장을 생성합니다.",
+      "category": "세금계산서",
+      "order": 5,
+      "relatedKnowledgeId": "case_modify_error"
+    },
+    {
+      "id": "faq_modify_duplicate",
+      "question": "중복 발급된 세금계산서는 어떻게 하나요?",
+      "answer": "동일 거래에 대해 세금계산서가 중복 발급된 경우:\n\n【수정 사유】 이중발급\n【작성일자】 이중발급 착오 인식일\n【발급 건수】 1장 (마이너스 금액)\n【금액 입력】 중복 발급된 계산서 전액 부(-)",
+      "category": "세금계산서",
+      "order": 6,
+      "relatedKnowledgeId": "case_modify_duplicate"
+    },
+    {
+      "id": "faq_modify_amount",
+      "question": "금액이 변동된 경우 세금계산서는?",
+      "answer": "공급가액이 변동된 경우 수정세금계산서 발급:\n\n【수정 사유】 공급가액변동\n【작성일자】 가액 변동 발생일\n【발급 건수】 1장\n【금액 입력】 증가 시 정(+), 감소 시 부(-)\n\n증감액만 입력하시면 됩니다.",
+      "category": "세금계산서",
+      "order": 7,
+      "relatedKnowledgeId": "case_modify_amount"
+    },
+    {
+      "id": "faq_modify_cancel",
+      "question": "계약이 해제된 경우 세금계산서는?",
+      "answer": "계약이 해제된 경우 수정세금계산서 발급:\n\n【수정 사유】 계약해제\n【작성일자】 계약 해제일\n【발급 건수】 1장 (마이너스 금액)\n【금액 입력】 원본 전액을 부(-) 금액으로 입력",
+      "category": "세금계산서",
+      "order": 8,
+      "relatedKnowledgeId": "case_modify_cancel"
+    },
+    {
+      "id": "faq_vat_filing",
+      "question": "부가가치세 신고 기한은 언제인가요?",
+      "answer": "부가가치세 신고 기한은 다음과 같습니다:\n\n【확정신고】\n• 제1기 (1~6월분): 7월 1일 ~ 7월 25일\n• 제2기 (7~12월분): 다음 해 1월 1일 ~ 1월 25일\n\n【예정신고】 (개인사업자)\n• 제1기 예정 (1~3월분): 4월 1일 ~ 4월 25일\n• 제2기 예정 (7~9월분): 10월 1일 ~ 10월 25일\n\n기한 내 미신고 시 무신고 가산세 20% 부과됩니다.",
+      "category": "세무정보",
+      "order": 1,
+      "relatedKnowledgeId": "knowledge_vat_filing"
+    },
+    {
+      "id": "faq_penalty",
+      "question": "세금계산서 미발급 시 가산세는?",
+      "answer": "세금계산서 발급 관련 가산세:\n\n【발급 가산세】\n• 미발급: 공급가액의 2%\n• 지연발급: 공급가액의 1%\n\n【전송 가산세】\n• 미전송: 공급가액의 0.5%\n• 지연전송: 공급가액의 0.3%\n\n【발급 기한】\n• 공급일이 속하는 달의 다음 달 10일까지 발급\n• 발급일 다음 날까지 국세청 전송\n\n기한을 준수하여 가산세를 방지하시기 바랍니다.",
+      "category": "세무정보",
+      "order": 2,
+      "relatedKnowledgeId": "knowledge_penalty"
+    },
+    {
+      "id": "faq_certificate",
+      "question": "공동인증서 등록 방법은?",
+      "answer": "바로빌 인증서 등록 방법:\n\n【등록 절차】\n1. 바로빌 로그인\n2. '환경설정' 또는 '인증서 관리' 메뉴 선택\n3. '인증서 등록' 버튼 클릭\n4. 인증서 저장 위치 선택 (하드디스크/USB/스마트폰)\n5. 인증서 비밀번호 입력\n6. 등록 완료\n\n【주의사항】\n• 사업자 명의의 인증서만 등록 가능\n• 유효기간 만료 전 갱신 필요\n• 인증서 갱신 후 재등록 필요",
+      "category": "인증서등록",
+      "order": 1,
+      "relatedKnowledgeId": "knowledge_certificate"
+    },
+    {
+      "id": "faq_signup",
+      "question": "바로빌 회원가입은 어떻게 하나요?",
+      "answer": "바로빌 회원가입 방법:\n\n【가입 절차】\n1. 바로빌 홈페이지 접속 (www.barobill.co.kr)\n2. '회원가입' 버튼 클릭\n3. 사업자 정보 입력 (사업자등록번호, 상호명, 대표자명, 사업장 주소)\n4. 담당자 정보 입력 (담당자 이름, 이메일, 연락처)\n5. 아이디 및 비밀번호 설정\n6. 이용약관 동의\n7. 본인인증 (휴대폰 인증)\n8. 가입 완료\n\n가입 후 포인트 충전, 공동인증서 등록을 진행하시면 서비스를 이용하실 수 있습니다.",
+      "category": "바로빌서비스",
+      "order": 1,
+      "relatedGuides": [
+        {
+          "title": "회원가입 바로가기",
+          "url": "https://www.barobill.co.kr/member/join",
+          "icon": "🔗"
+        }
+      ],
+      "relatedKnowledgeId": "knowledge_service_signup"
+    },
+    {
+      "id": "faq_pricing",
+      "question": "바로빌 요금은 어떻게 되나요?",
+      "answer": "바로빌 요금 안내:\n\n【기본 요금 체계】\n• 선불 포인트 방식 (1포인트 = 1원)\n• 사용량에 따라 포인트 차감\n\n【주요 서비스 요금】\n• 전자세금계산서 발급: 건당 30~50원\n• 전자계산서 발급: 건당 30~50원\n• 현금영수증 발급: 건당 20원\n• SMS 전송: 건당 15~20원\n• 카카오톡 알림톡: 건당 8~15원\n• FAX 전송: 건당 50원\n\n상세 요금은 바로빌 고객센터(1600-8487)로 문의하시기 바랍니다.",
+      "category": "바로빌서비스",
+      "order": 2,
+      "relatedKnowledgeId": "knowledge_service_pricing"
+    }
+  ]
+}
+

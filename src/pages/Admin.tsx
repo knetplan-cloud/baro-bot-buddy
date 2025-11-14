@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Download, Plus, Pencil, Trash2, Eye, Home, RefreshCw, MessageSquare } from "lucide-react";
 import unifiedData from "@/data/barobill-knowledge.json";
+import faqData from "@/data/barobill-faq.json";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,7 +22,9 @@ type KnowledgeItem = {
   title: string;
   description?: string;
   keywords: string[];
+  negativeKeywords?: string[];
   priority: number;
+  dateTemplate?: boolean;
   responses: {
     formal: string;
     casual: string;
@@ -41,6 +44,32 @@ type Feedback = {
   status: string;
 };
 
+type FAQItem = {
+  id: string;
+  question: string;
+  category: string;
+  order?: number;
+  content?: Array<{
+    type: "text" | "image";
+    content?: string;
+    src?: string;
+    alt?: string;
+    caption?: string;
+  }>;
+  answer?: string;
+  images?: Array<{
+    src: string;
+    alt?: string;
+    caption?: string;
+  }>;
+  relatedGuides?: Array<{
+    title: string;
+    url: string;
+    icon?: string;
+  }>;
+  relatedKnowledgeId?: string;
+};
+
 const Admin = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<KnowledgeItem[]>(unifiedData.items as KnowledgeItem[]);
@@ -50,6 +79,40 @@ const Admin = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("knowledge");
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  
+  // 카테고리 목록 추출 및 관리
+  const getCategories = (): string[] => {
+    const categories = new Set<string>();
+    items.forEach(item => {
+      if (item.category) categories.add(item.category);
+    });
+    return Array.from(categories).sort();
+  };
+  
+  const [categories, setCategories] = useState<string[]>(getCategories());
+  const [newCategory, setNewCategory] = useState("");
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+
+  // 카테고리 추가
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) {
+      toast.error("카테고리명을 입력해주세요.");
+      return;
+    }
+    if (categories.includes(newCategory.trim())) {
+      toast.error("이미 존재하는 카테고리입니다.");
+      return;
+    }
+    setCategories([...categories, newCategory.trim()].sort());
+    setNewCategory("");
+    setIsCategoryDialogOpen(false);
+    toast.success("카테고리가 추가되었습니다!");
+  };
+
+  // 카테고리 목록 업데이트 (items 변경 시)
+  useEffect(() => {
+    setCategories(getCategories());
+  }, [items]);
 
   // 새 항목 초기값
   const createNewItem = (): KnowledgeItem => ({
@@ -58,7 +121,9 @@ const Admin = () => {
     category: "세금계산서",
     title: "",
     keywords: [],
+    negativeKeywords: [],
     priority: 5,
+    dateTemplate: false,
     responses: {
       formal: "",
       casual: "",
@@ -191,32 +256,65 @@ const Admin = () => {
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" onClick={() => setEditingItem(createNewItem())}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setEditingItem(createNewItem());
+                    setActiveTab("knowledge");
+                  }}
+                >
                   <Plus className="w-4 h-4 mr-2" />
-                  새 항목 추가
+                  지식베이스 추가
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
-                    {editingItem?.title ? "항목 수정" : "새 항목 추가"}
+                    {editingItem?.title ? "항목 수정" : "새 지식베이스 추가"}
                   </DialogTitle>
                 </DialogHeader>
                 {editingItem && (
-                  <ItemEditor item={editingItem} onSave={handleSaveItem} onCancel={() => {
-                    setIsDialogOpen(false);
-                    setEditingItem(null);
-                  }} />
+                  <ItemEditor 
+                    item={editingItem} 
+                    onSave={handleSaveItem} 
+                    onCancel={() => {
+                      setIsDialogOpen(false);
+                      setEditingItem(null);
+                    }}
+                    categories={categories}
+                    newCategory={newCategory}
+                    setNewCategory={setNewCategory}
+                    isCategoryDialogOpen={isCategoryDialogOpen}
+                    setIsCategoryDialogOpen={setIsCategoryDialogOpen}
+                    handleAddCategory={handleAddCategory}
+                  />
                 )}
               </DialogContent>
             </Dialog>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setActiveTab("faq");
+                // FAQ 추가 버튼 클릭 이벤트는 FAQManagementSection에서 처리
+                setTimeout(() => {
+                  const faqAddButton = document.querySelector('[data-faq-add-button]') as HTMLElement;
+                  if (faqAddButton) {
+                    faqAddButton.click();
+                  }
+                }, 100);
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              FAQ 추가
+            </Button>
           </div>
         </Card>
 
-        {/* Tabs로 지식베이스와 피드백 관리 분리 */}
+        {/* Tabs로 지식베이스, FAQ, 피드백 관리 분리 */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="knowledge">지식베이스 관리</TabsTrigger>
+            <TabsTrigger value="faq">FAQ 관리</TabsTrigger>
             <TabsTrigger value="feedback">
               피드백 관리
               {feedbacks.length > 0 && (
@@ -250,6 +348,8 @@ const Admin = () => {
                       <SelectItem value="intent">인사 (Intent)</SelectItem>
                       <SelectItem value="knowledge">일반 지식</SelectItem>
                       <SelectItem value="case">사례 (Case)</SelectItem>
+                      <SelectItem value="faq">FAQ (자주묻는질문)</SelectItem>
+                      <SelectItem value="error">오류 해결 (Error)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -266,6 +366,8 @@ const Admin = () => {
                   <Badge variant="secondary">Intent: {items.filter(i => i.type === "intent").length}</Badge>
                   <Badge variant="secondary">Knowledge: {items.filter(i => i.type === "knowledge").length}</Badge>
                   <Badge variant="secondary">Case: {items.filter(i => i.type === "case").length}</Badge>
+                  <Badge variant="secondary">FAQ: {items.filter(i => i.type === "faq").length}</Badge>
+                  <Badge variant="secondary">Error: {items.filter(i => i.type === "error").length}</Badge>
                 </div>
               </div>
 
@@ -275,7 +377,12 @@ const Admin = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <Badge variant={item.type === "intent" ? "default" : item.type === "case" ? "destructive" : "secondary"}>
+                          <Badge variant={
+                            item.type === "intent" ? "default" : 
+                            item.type === "case" || item.type === "error" ? "destructive" : 
+                            item.type === "faq" ? "outline" :
+                            "secondary"
+                          }>
                             {item.type}
                           </Badge>
                           <Badge variant="outline">{item.category}</Badge>
@@ -331,6 +438,10 @@ const Admin = () => {
                 </div>
               )}
             </Card>
+          </TabsContent>
+
+          <TabsContent value="faq">
+            <FAQManagementSection />
           </TabsContent>
 
           <TabsContent value="feedback">
@@ -393,13 +504,33 @@ const Admin = () => {
 };
 
 // 항목 편집 컴포넌트
-const ItemEditor = ({ item, onSave, onCancel }: {
+const ItemEditor = ({ 
+  item, 
+  onSave, 
+  onCancel,
+  categories,
+  newCategory,
+  setNewCategory,
+  isCategoryDialogOpen,
+  setIsCategoryDialogOpen,
+  handleAddCategory
+}: {
   item: KnowledgeItem;
   onSave: (item: KnowledgeItem) => void;
   onCancel: () => void;
+  categories: string[];
+  newCategory: string;
+  setNewCategory: (value: string) => void;
+  isCategoryDialogOpen: boolean;
+  setIsCategoryDialogOpen: (value: boolean) => void;
+  handleAddCategory: () => void;
 }) => {
   const [editedItem, setEditedItem] = useState<KnowledgeItem>(item);
   const [newKeyword, setNewKeyword] = useState("");
+  const [newNegativeKeyword, setNewNegativeKeyword] = useState("");
+  const [newGuideTitle, setNewGuideTitle] = useState("");
+  const [newGuideUrl, setNewGuideUrl] = useState("");
+  const [newGuideIcon, setNewGuideIcon] = useState("📘");
 
   const handleAddKeyword = () => {
     if (newKeyword.trim() && !editedItem.keywords.includes(newKeyword.trim())) {
@@ -418,6 +549,51 @@ const ItemEditor = ({ item, onSave, onCancel }: {
     });
   };
 
+  const handleAddNegativeKeyword = () => {
+    const negKeywords = editedItem.negativeKeywords || [];
+    if (newNegativeKeyword.trim() && !negKeywords.includes(newNegativeKeyword.trim())) {
+      setEditedItem({
+        ...editedItem,
+        negativeKeywords: [...negKeywords, newNegativeKeyword.trim()]
+      });
+      setNewNegativeKeyword("");
+    }
+  };
+
+  const handleRemoveNegativeKeyword = (keyword: string) => {
+    setEditedItem({
+      ...editedItem,
+      negativeKeywords: (editedItem.negativeKeywords || []).filter(k => k !== keyword)
+    });
+  };
+
+  const handleAddGuide = () => {
+    if (!newGuideTitle.trim() || !newGuideUrl.trim()) {
+      toast.error("가이드 제목과 URL을 입력해주세요.");
+      return;
+    }
+    const guides = editedItem.relatedGuides || [];
+    setEditedItem({
+      ...editedItem,
+      relatedGuides: [...guides, {
+        title: newGuideTitle.trim(),
+        url: newGuideUrl.trim(),
+        icon: newGuideIcon.trim() || "📘"
+      }]
+    });
+    setNewGuideTitle("");
+    setNewGuideUrl("");
+    setNewGuideIcon("📘");
+  };
+
+  const handleRemoveGuide = (index: number) => {
+    const guides = editedItem.relatedGuides || [];
+    setEditedItem({
+      ...editedItem,
+      relatedGuides: guides.filter((_, i) => i !== index)
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -431,16 +607,68 @@ const ItemEditor = ({ item, onSave, onCancel }: {
               <SelectItem value="intent">Intent (인사)</SelectItem>
               <SelectItem value="knowledge">Knowledge (일반)</SelectItem>
               <SelectItem value="case">Case (사례)</SelectItem>
+              <SelectItem value="faq">FAQ (자주묻는질문)</SelectItem>
+              <SelectItem value="error">Error (오류 해결)</SelectItem>
             </SelectContent>
           </Select>
         </div>
         <div>
           <Label>카테고리 *</Label>
-          <Input
-            value={editedItem.category}
-            onChange={(e) => setEditedItem({ ...editedItem, category: e.target.value })}
-            placeholder="예: 세금계산서"
-          />
+          <div className="flex gap-2">
+            <Select
+              value={editedItem.category}
+              onValueChange={(value) => setEditedItem({ ...editedItem, category: value })}
+            >
+              <SelectTrigger className="flex-1">
+                <SelectValue placeholder="카테고리 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>새 카테고리 추가</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>카테고리명</Label>
+                    <Input
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                      placeholder="예: 새카테고리"
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          handleAddCategory();
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => {
+                      setIsCategoryDialogOpen(false);
+                      setNewCategory("");
+                    }}>
+                      취소
+                    </Button>
+                    <Button onClick={handleAddCategory}>
+                      추가
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
@@ -535,11 +763,705 @@ const ItemEditor = ({ item, onSave, onCancel }: {
         />
       </div>
 
+      <div>
+        <Label>제외 키워드 (Negative Keywords)</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          이 키워드가 질문에 포함되면 이 항목이 선택되지 않습니다.
+        </p>
+        <div className="flex gap-2 mb-2">
+          <Input
+            value={newNegativeKeyword}
+            onChange={(e) => setNewNegativeKeyword(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleAddNegativeKeyword()}
+            placeholder="제외 키워드 입력 후 Enter"
+          />
+          <Button type="button" onClick={handleAddNegativeKeyword} size="sm">
+            추가
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(editedItem.negativeKeywords || []).map((keyword, idx) => (
+            <Badge key={idx} variant="destructive" className="cursor-pointer" onClick={() => handleRemoveNegativeKeyword(keyword)}>
+              {keyword} ×
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label>날짜 템플릿 (Date Template)</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          날짜가 포함된 질문에 대응하는 템플릿 항목인 경우 체크하세요. {"{date}"}, {"{deadline}"} 변수를 사용할 수 있습니다.
+        </p>
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={editedItem.dateTemplate || false}
+            onChange={(e) => setEditedItem({ ...editedItem, dateTemplate: e.target.checked })}
+            className="w-4 h-4"
+          />
+          <Label className="cursor-pointer">날짜 템플릿 항목으로 설정</Label>
+        </div>
+      </div>
+
+      <div>
+        <Label>관련 가이드 (Related Guides)</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          답변 하단에 표시될 관련 가이드 링크를 추가하세요.
+        </p>
+        <div className="space-y-2 mb-2">
+          <div className="grid grid-cols-3 gap-2">
+            <Input
+              value={newGuideTitle}
+              onChange={(e) => setNewGuideTitle(e.target.value)}
+              placeholder="가이드 제목"
+            />
+            <Input
+              value={newGuideUrl}
+              onChange={(e) => setNewGuideUrl(e.target.value)}
+              placeholder="URL (https://...)"
+            />
+            <div className="flex gap-2">
+              <Input
+                value={newGuideIcon}
+                onChange={(e) => setNewGuideIcon(e.target.value)}
+                placeholder="아이콘 (📘)"
+                className="w-20"
+              />
+              <Button type="button" onClick={handleAddGuide} size="sm">
+                추가
+              </Button>
+            </div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {(editedItem.relatedGuides || []).map((guide, idx) => (
+            <div key={idx} className="flex items-center gap-2 p-2 border rounded">
+              <span>{guide.icon || "📘"}</span>
+              <span className="flex-1 text-sm">{guide.title}</span>
+              <a href={guide.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+                {guide.url}
+              </a>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => handleRemoveGuide(idx)}
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="flex gap-2 justify-end pt-4 border-t">
         <Button variant="outline" onClick={onCancel}>
           취소
         </Button>
         <Button onClick={() => onSave(editedItem)}>
+          저장
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// FAQ 관리 섹션 컴포넌트
+const FAQManagementSection = () => {
+  const [faqItems, setFaqItems] = useState<FAQItem[]>(faqData.items as FAQItem[]);
+  const [editingFaq, setEditingFaq] = useState<FAQItem | null>(null);
+  const [isFaqDialogOpen, setIsFaqDialogOpen] = useState(false);
+  const [faqSearchQuery, setFaqSearchQuery] = useState("");
+  const [faqFilterCategory, setFaqFilterCategory] = useState<string>("all");
+
+  const createNewFAQ = (): FAQItem => ({
+    id: `faq_${Date.now()}`,
+    question: "",
+    category: faqData.categories[0] || "세금계산서",
+    order: faqItems.length + 1,
+    content: []
+  });
+
+  const handleSaveFAQ = (faq: FAQItem) => {
+    if (!faq.question) {
+      toast.error("질문을 입력해주세요!");
+      return;
+    }
+
+    const existingIndex = faqItems.findIndex(f => f.id === faq.id);
+    let newFaqItems;
+    
+    if (existingIndex >= 0) {
+      newFaqItems = [...faqItems];
+      newFaqItems[existingIndex] = faq;
+      toast.success("FAQ가 수정되었습니다!");
+    } else {
+      newFaqItems = [...faqItems, faq];
+      toast.success("새 FAQ가 추가되었습니다!");
+    }
+    
+    setFaqItems(newFaqItems);
+    setIsFaqDialogOpen(false);
+    setEditingFaq(null);
+    
+    // JSON 파일 형식으로 다운로드 안내
+    toast.info("변경사항을 저장하려면 'FAQ JSON 다운로드' 버튼을 클릭하여 파일을 다운로드하고, src/data/barobill-faq.json 파일을 교체해주세요.", {
+      duration: 5000
+    });
+  };
+
+  const handleDeleteFAQ = (id: string) => {
+    if (confirm("정말 이 FAQ를 삭제하시겠습니까?")) {
+      setFaqItems(faqItems.filter(f => f.id !== id));
+      toast.success("FAQ가 삭제되었습니다!");
+    }
+  };
+
+  const filteredFaqs = useMemo(() => {
+    let filtered = faqItems;
+    
+    if (faqSearchQuery.trim()) {
+      const query = faqSearchQuery.toLowerCase();
+      filtered = filtered.filter(faq =>
+        faq.question.toLowerCase().includes(query) ||
+        (faq.answer && faq.answer.toLowerCase().includes(query)) ||
+        (faq.content && faq.content.some(block => 
+          block.type === "text" && block.content?.toLowerCase().includes(query)
+        ))
+      );
+    }
+    
+    if (faqFilterCategory !== "all") {
+      filtered = filtered.filter(faq => faq.category === faqFilterCategory);
+    }
+    
+    return filtered.sort((a, b) => (a.order || 999) - (b.order || 999));
+  }, [faqItems, faqSearchQuery, faqFilterCategory]);
+
+  const handleDownloadFAQ = () => {
+    // JSON 파일 형식에 맞게 데이터 구성
+    const jsonData = {
+      metadata: {
+        ...faqData.metadata,
+        updated_at: new Date().toISOString().split("T")[0]
+      },
+      categories: faqData.categories,
+      items: faqItems.map(item => {
+        // JSON 형식에 맞게 정리
+        const jsonItem: any = {
+          id: item.id,
+          question: item.question,
+          category: item.category
+        };
+        
+        // order가 있으면 추가
+        if (item.order !== undefined) {
+          jsonItem.order = item.order;
+        }
+        
+        // content 배열이 있으면 추가
+        if (item.content && item.content.length > 0) {
+          jsonItem.content = item.content;
+        }
+        
+        // answer가 있으면 추가 (하위 호환성)
+        if (item.answer) {
+          jsonItem.answer = item.answer;
+        }
+        
+        // images가 있으면 추가 (하위 호환성)
+        if (item.images && item.images.length > 0) {
+          jsonItem.images = item.images;
+        }
+        
+        // relatedGuides가 있으면 추가
+        if (item.relatedGuides && item.relatedGuides.length > 0) {
+          jsonItem.relatedGuides = item.relatedGuides;
+        }
+        
+        // relatedKnowledgeId가 있으면 추가
+        if (item.relatedKnowledgeId) {
+          jsonItem.relatedKnowledgeId = item.relatedKnowledgeId;
+        }
+        
+        return jsonItem;
+      })
+    };
+    
+    const dataStr = JSON.stringify(jsonData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `barobill-faq.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("FAQ JSON 파일이 다운로드되었습니다! src/data/barobill-faq.json 파일을 교체해주세요.");
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">FAQ 관리</h2>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleDownloadFAQ}>
+              <Download className="w-4 h-4 mr-2" />
+              FAQ JSON 다운로드
+            </Button>
+            <Dialog open={isFaqDialogOpen} onOpenChange={setIsFaqDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  data-faq-add-button
+                  onClick={() => {
+                    setEditingFaq(createNewFAQ());
+                    setIsFaqDialogOpen(true);
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  새 FAQ 추가
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingFaq?.question ? "FAQ 수정" : "새 FAQ 추가"}
+                  </DialogTitle>
+                </DialogHeader>
+                {editingFaq && (
+                  <FAQEditor faq={editingFaq} onSave={handleSaveFAQ} onCancel={() => {
+                    setIsFaqDialogOpen(false);
+                    setEditingFaq(null);
+                  }} categories={faqData.categories} />
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex gap-4 flex-wrap mb-6">
+          <div className="flex-1 min-w-[200px]">
+            <Label>검색</Label>
+            <Input
+              placeholder="질문으로 검색..."
+              value={faqSearchQuery}
+              onChange={(e) => setFaqSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="w-[200px]">
+            <Label>카테고리 필터</Label>
+            <Select value={faqFilterCategory} onValueChange={setFaqFilterCategory}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                {faqData.categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* FAQ List */}
+        <div className="space-y-3">
+          {filteredFaqs.map((faq) => (
+            <Card key={faq.id} className="p-4 hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="outline">{faq.category}</Badge>
+                    {faq.order && <Badge variant="secondary">순서: {faq.order}</Badge>}
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">{faq.question}</h3>
+                  {faq.answer && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                      {faq.answer}
+                    </p>
+                  )}
+                  {faq.content && faq.content.length > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      콘텐츠 블록: {faq.content.length}개
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditingFaq(faq);
+                      setIsFaqDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteFAQ(faq.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {filteredFaqs.length === 0 && (
+          <div className="text-center py-12 text-muted-foreground">
+            검색 결과가 없습니다.
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+};
+
+// FAQ 에디터 컴포넌트
+const FAQEditor = ({ faq, onSave, onCancel, categories }: {
+  faq: FAQItem;
+  onSave: (faq: FAQItem) => void;
+  onCancel: () => void;
+  categories: string[];
+}) => {
+  const [editedFaq, setEditedFaq] = useState<FAQItem>(faq);
+  const [newContentType, setNewContentType] = useState<"text" | "image">("text");
+  const [newTextContent, setNewTextContent] = useState("");
+  const [newImageSrc, setNewImageSrc] = useState("");
+  const [newImageAlt, setNewImageAlt] = useState("");
+  const [newImageCaption, setNewImageCaption] = useState("");
+  const [newGuideTitle, setNewGuideTitle] = useState("");
+  const [newGuideUrl, setNewGuideUrl] = useState("");
+  const [newGuideIcon, setNewGuideIcon] = useState("📘");
+
+  const handleAddContent = () => {
+    if (newContentType === "text" && !newTextContent.trim()) {
+      toast.error("텍스트 내용을 입력해주세요.");
+      return;
+    }
+    if (newContentType === "image" && !newImageSrc.trim()) {
+      toast.error("이미지 경로를 입력해주세요.");
+      return;
+    }
+
+    const content = editedFaq.content || [];
+    if (newContentType === "text") {
+      content.push({
+        type: "text",
+        content: newTextContent.trim()
+      });
+      setNewTextContent("");
+    } else {
+      content.push({
+        type: "image",
+        src: newImageSrc.trim(),
+        alt: newImageAlt.trim() || undefined,
+        caption: newImageCaption.trim() || undefined
+      });
+      setNewImageSrc("");
+      setNewImageAlt("");
+      setNewImageCaption("");
+    }
+    setEditedFaq({ ...editedFaq, content });
+  };
+
+  const handleRemoveContent = (index: number) => {
+    const content = editedFaq.content || [];
+    setEditedFaq({
+      ...editedFaq,
+      content: content.filter((_, i) => i !== index)
+    });
+  };
+
+  const handleMoveContent = (index: number, direction: "up" | "down") => {
+    const content = [...(editedFaq.content || [])];
+    if (direction === "up" && index > 0) {
+      [content[index - 1], content[index]] = [content[index], content[index - 1]];
+    } else if (direction === "down" && index < content.length - 1) {
+      [content[index], content[index + 1]] = [content[index + 1], content[index]];
+    }
+    setEditedFaq({ ...editedFaq, content });
+  };
+
+  const handleAddGuide = () => {
+    if (!newGuideTitle.trim() || !newGuideUrl.trim()) {
+      toast.error("가이드 제목과 URL을 입력해주세요.");
+      return;
+    }
+    const guides = editedFaq.relatedGuides || [];
+    setEditedFaq({
+      ...editedFaq,
+      relatedGuides: [...guides, {
+        title: newGuideTitle.trim(),
+        url: newGuideUrl.trim(),
+        icon: newGuideIcon.trim() || "📘"
+      }]
+    });
+    setNewGuideTitle("");
+    setNewGuideUrl("");
+    setNewGuideIcon("📘");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>질문 *</Label>
+        <Input
+          value={editedFaq.question}
+          onChange={(e) => setEditedFaq({ ...editedFaq, question: e.target.value })}
+          placeholder="예: 세금계산서 발급 방법은?"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>카테고리 *</Label>
+          <Select
+            value={editedFaq.category}
+            onValueChange={(value) => setEditedFaq({ ...editedFaq, category: value })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>순서</Label>
+          <Input
+            type="number"
+            value={editedFaq.order || ""}
+            onChange={(e) => setEditedFaq({ ...editedFaq, order: parseInt(e.target.value) || undefined })}
+            placeholder="숫자가 작을수록 먼저 표시"
+          />
+        </div>
+      </div>
+
+      {/* Content 배열 관리 */}
+      <div>
+        <Label>콘텐츠 (텍스트와 이미지 교차 배치)</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          텍스트와 이미지를 원하는 순서로 배치할 수 있습니다.
+        </p>
+        
+        {/* 기존 콘텐츠 표시 */}
+        <div className="space-y-2 mb-4">
+          {(editedFaq.content || []).map((block, idx) => (
+            <Card key={idx} className="p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <Badge variant={block.type === "text" ? "default" : "secondary"} className="mb-2">
+                    {block.type === "text" ? "텍스트" : "이미지"}
+                  </Badge>
+                  {block.type === "text" ? (
+                    <p className="text-sm whitespace-pre-wrap">{block.content}</p>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-muted-foreground">경로: {block.src}</p>
+                      {block.alt && <p className="text-xs text-muted-foreground">Alt: {block.alt}</p>}
+                      {block.caption && <p className="text-xs text-muted-foreground">설명: {block.caption}</p>}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleMoveContent(idx, "up")}
+                    disabled={idx === 0}
+                  >
+                    ↑
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleMoveContent(idx, "down")}
+                    disabled={idx === (editedFaq.content?.length || 0) - 1}
+                  >
+                    ↓
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveContent(idx)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* 새 콘텐츠 추가 */}
+        <Card className="p-4 border-dashed">
+          <div className="space-y-3">
+            <div>
+              <Label>콘텐츠 타입</Label>
+              <Select value={newContentType} onValueChange={(value: "text" | "image") => setNewContentType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">텍스트</SelectItem>
+                  <SelectItem value="image">이미지</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {newContentType === "text" ? (
+              <div>
+                <Label>텍스트 내용</Label>
+                <Textarea
+                  value={newTextContent}
+                  onChange={(e) => setNewTextContent(e.target.value)}
+                  placeholder="텍스트 내용 입력 (Markdown 지원: **굵게**, [메뉴명])"
+                  rows={4}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div>
+                  <Label>이미지 경로 *</Label>
+                  <Input
+                    value={newImageSrc}
+                    onChange={(e) => setNewImageSrc(e.target.value)}
+                    placeholder="/faq-images/파일명.png"
+                  />
+                </div>
+                <div>
+                  <Label>Alt 텍스트</Label>
+                  <Input
+                    value={newImageAlt}
+                    onChange={(e) => setNewImageAlt(e.target.value)}
+                    placeholder="이미지 설명 (접근성)"
+                  />
+                </div>
+                <div>
+                  <Label>캡션</Label>
+                  <Input
+                    value={newImageCaption}
+                    onChange={(e) => setNewImageCaption(e.target.value)}
+                    placeholder="이미지 하단 설명 (선택)"
+                  />
+                </div>
+              </div>
+            )}
+
+            <Button type="button" onClick={handleAddContent} className="w-full">
+              콘텐츠 추가
+            </Button>
+          </div>
+        </Card>
+      </div>
+
+      {/* 하위 호환성: answer 필드 (기존 구조) */}
+      <div>
+        <Label>답변 (하위 호환성 - content가 없을 때 사용)</Label>
+        <Textarea
+          value={editedFaq.answer || ""}
+          onChange={(e) => setEditedFaq({ ...editedFaq, answer: e.target.value })}
+          placeholder="간단한 답변 (content 배열 사용 시 비워도 됨)"
+          rows={4}
+        />
+      </div>
+
+      {/* 관련 가이드 */}
+      <div>
+        <Label>관련 가이드</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          답변 하단에 표시될 관련 가이드 링크를 추가하세요.
+        </p>
+        <div className="space-y-2 mb-2">
+          {editedFaq.relatedGuides && editedFaq.relatedGuides.length > 0 && (
+            <div className="space-y-2">
+              {editedFaq.relatedGuides.map((guide, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-2 border rounded">
+                  <span>{guide.icon || "📘"}</span>
+                  <span className="flex-1 text-sm">{guide.title}</span>
+                  <a href={guide.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+                    {guide.url}
+                  </a>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const guides = editedFaq.relatedGuides || [];
+                      setEditedFaq({
+                        ...editedFaq,
+                        relatedGuides: guides.filter((_, i) => i !== idx)
+                      });
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={newGuideTitle}
+            onChange={(e) => setNewGuideTitle(e.target.value)}
+            placeholder="가이드 제목"
+            className="flex-1"
+          />
+          <Input
+            value={newGuideUrl}
+            onChange={(e) => setNewGuideUrl(e.target.value)}
+            placeholder="URL"
+            className="flex-1"
+          />
+          <Input
+            value={newGuideIcon}
+            onChange={(e) => setNewGuideIcon(e.target.value)}
+            placeholder="아이콘 (선택)"
+            className="w-20"
+          />
+          <Button type="button" onClick={handleAddGuide} size="sm">
+            추가
+          </Button>
+        </div>
+      </div>
+
+      {/* 관련 지식베이스 ID */}
+      <div>
+        <Label>관련 지식베이스 ID (선택)</Label>
+        <Input
+          value={editedFaq.relatedKnowledgeId || ""}
+          onChange={(e) => setEditedFaq({ ...editedFaq, relatedKnowledgeId: e.target.value || undefined })}
+          placeholder="예: knowledge_tax_issuance"
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          이 FAQ와 연결된 지식베이스 항목의 ID를 입력하세요.
+        </p>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button variant="outline" onClick={onCancel}>
+          취소
+        </Button>
+        <Button onClick={() => onSave(editedFaq)}>
           저장
         </Button>
       </div>
