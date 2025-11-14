@@ -1,4 +1,5 @@
-import unifiedData from "@/data/unified-knowledge.json";
+import unifiedData from "@/data/barobill-knowledge.json";
+import { extractDateFromQuery, replaceDynamicVariables, type ExtractedDate } from "./date-utils";
 
 // 사용자가 설정 가능한 어투 타입
 export type ToneType = "formal" | "casual" | "plain";
@@ -57,6 +58,17 @@ const getExpandedKeywords = (query: string): string[] => {
  * 3. 매칭 엔진: 점수 기반으로 최적의 답변 찾기
  */
 export const matchQuery = (query: string, tone: ToneType): MatchResult => {
+  // 날짜 추출 (동적 변수 치환을 위해)
+  const extractedDate = extractDateFromQuery(query);
+  
+  // 날짜가 추출되면 키워드에 추가
+  const dateKeywords: string[] = [];
+  if (extractedDate) {
+    dateKeywords.push(extractedDate.fullDate);
+    dateKeywords.push(extractedDate.monthDay);
+    dateKeywords.push(extractedDate.isoDate);
+  }
+  
   const expandedQueryKeywords = getExpandedKeywords(query); // 확장된 질문 키워드들
   const normalizedQuery = normalizeText(query);
 
@@ -64,6 +76,19 @@ export const matchQuery = (query: string, tone: ToneType): MatchResult => {
   let maxScore = 0;
 
   unifiedData.items.forEach((item) => {
+    // Negative Keywords 체크: 제외 키워드가 있으면 이 항목은 제외
+    if ((item as any).negativeKeywords && Array.isArray((item as any).negativeKeywords)) {
+      const hasNegativeKeyword = (item as any).negativeKeywords.some((negKeyword: string) => {
+        const normalizedNegKeyword = normalizeText(negKeyword);
+        return normalizedQuery.includes(normalizedNegKeyword) || 
+               expandedQueryKeywords.some(qKey => qKey.includes(normalizedNegKeyword));
+      });
+      
+      if (hasNegativeKeyword) {
+        return; // 이 항목은 제외
+      }
+    }
+    
     let score = 0;
     
     // (1) 키워드 매칭 점수 계산
@@ -75,6 +100,23 @@ export const matchQuery = (query: string, tone: ToneType): MatchResult => {
         score += 10; // 매칭된 키워드 하나당 10점
       }
     });
+    
+    // 날짜 키워드 매칭 (날짜가 추출된 경우)
+    if (extractedDate && dateKeywords.length > 0) {
+      item.keywords.forEach((k) => {
+        const normalizedItemKeyword = normalizeText(k);
+        // 날짜 관련 키워드가 있으면 추가 점수
+        if (dateKeywords.some(dateKey => normalizeText(dateKey).includes(normalizedItemKeyword) ||
+                                   normalizedItemKeyword.includes(normalizeText(dateKey)))) {
+          score += 10;
+        }
+      });
+      
+      // 날짜 템플릿 항목인 경우 추가 점수
+      if ((item as any).dateTemplate === true) {
+        score += 15; // 날짜 템플릿 항목에 가산점
+      }
+    }
 
     // (2) 제목(Title) 정확도 가산점
     // 질문이 제목을 직접적으로 포함하면 큰 점수 부여
@@ -107,7 +149,10 @@ export const matchQuery = (query: string, tone: ToneType): MatchResult => {
   }
 
   // (5) 어투에 맞는 답변 반환 (없으면 formal을 기본값으로)
-  const responseText = bestMatch.responses[tone] || bestMatch.responses["formal"];
+  let responseText = bestMatch.responses[tone] || bestMatch.responses["formal"];
+  
+  // 동적 변수 치환 ({date}, {deadline}, {today})
+  responseText = replaceDynamicVariables(responseText, extractedDate);
 
   return {
     found: true,

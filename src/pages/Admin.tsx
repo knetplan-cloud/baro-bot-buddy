@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,10 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Download, Plus, Pencil, Trash2, Eye, Home } from "lucide-react";
-import unifiedData from "@/data/unified-knowledge.json";
+import { Download, Plus, Pencil, Trash2, Eye, Home, RefreshCw, MessageSquare } from "lucide-react";
+import unifiedData from "@/data/barobill-knowledge.json";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 type KnowledgeItem = {
   id: string;
@@ -32,6 +34,13 @@ type KnowledgeItem = {
   }>;
 };
 
+type Feedback = {
+  id: string;
+  content: string;
+  created_at: string;
+  status: string;
+};
+
 const Admin = () => {
   const navigate = useNavigate();
   const [items, setItems] = useState<KnowledgeItem[]>(unifiedData.items as KnowledgeItem[]);
@@ -39,6 +48,8 @@ const Admin = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [filterType, setFilterType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("knowledge");
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
   // 새 항목 초기값
   const createNewItem = (): KnowledgeItem => ({
@@ -98,13 +109,53 @@ const Admin = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `unified-knowledge-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `barobill-knowledge-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
     
     toast.success("JSON 파일이 다운로드되었습니다!");
+  };
+
+  // 피드백 로드
+  useEffect(() => {
+    if (activeTab === "feedback") {
+      loadFeedbacks();
+    }
+  }, [activeTab]);
+
+  const loadFeedbacks = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("feedback")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setFeedbacks(data || []);
+    } catch (error) {
+      console.error("Error loading feedbacks:", error);
+      toast.error("피드백을 불러오는데 실패했습니다.");
+    }
+  };
+
+  const handleDeleteFeedback = async (id: string) => {
+    if (!confirm("정말 이 피드백을 삭제하시겠습니까?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("feedback")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success("피드백이 삭제되었습니다.");
+      loadFeedbacks();
+    } catch (error) {
+      console.error("Error deleting feedback:", error);
+      toast.error("피드백 삭제에 실패했습니다.");
+    }
   };
 
   // 필터링된 항목
@@ -162,109 +213,180 @@ const Admin = () => {
           </div>
         </Card>
 
-        {/* Filters */}
-        <Card className="p-4 mb-6">
-          <div className="flex gap-4 flex-wrap">
-            <div className="flex-1 min-w-[200px]">
-              <Label>검색</Label>
-              <Input
-                placeholder="제목이나 키워드로 검색..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <div className="w-[200px]">
-              <Label>유형 필터</Label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="intent">인사 (Intent)</SelectItem>
-                  <SelectItem value="knowledge">일반 지식</SelectItem>
-                  <SelectItem value="case">사례 (Case)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </Card>
+        {/* Tabs로 지식베이스와 피드백 관리 분리 */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="knowledge">지식베이스 관리</TabsTrigger>
+            <TabsTrigger value="feedback">
+              피드백 관리
+              {feedbacks.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {feedbacks.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Items List */}
-        <Card className="p-6">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              총 {filteredItems.length}개 항목
-            </h2>
-            <div className="flex gap-2">
-              <Badge variant="secondary">Intent: {items.filter(i => i.type === "intent").length}</Badge>
-              <Badge variant="secondary">Knowledge: {items.filter(i => i.type === "knowledge").length}</Badge>
-              <Badge variant="secondary">Case: {items.filter(i => i.type === "case").length}</Badge>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {filteredItems.map((item) => (
-              <Card key={item.id} className="p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant={item.type === "intent" ? "default" : item.type === "case" ? "destructive" : "secondary"}>
-                        {item.type}
-                      </Badge>
-                      <Badge variant="outline">{item.category}</Badge>
-                      <span className="text-xs text-muted-foreground">우선순위: {item.priority}</span>
-                    </div>
-                    <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
-                    )}
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {item.keywords.slice(0, 5).map((keyword, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {keyword}
-                        </Badge>
-                      ))}
-                      {item.keywords.length > 5 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{item.keywords.length - 5}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {item.responses.formal}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditingItem(item);
-                        setIsDialogOpen(true);
-                      }}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteItem(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+          <TabsContent value="knowledge">
+            {/* Filters */}
+            <Card className="p-4 mb-6">
+              <div className="flex gap-4 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <Label>검색</Label>
+                  <Input
+                    placeholder="제목이나 키워드로 검색..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-              </Card>
-            ))}
-          </div>
+                <div className="w-[200px]">
+                  <Label>유형 필터</Label>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체</SelectItem>
+                      <SelectItem value="intent">인사 (Intent)</SelectItem>
+                      <SelectItem value="knowledge">일반 지식</SelectItem>
+                      <SelectItem value="case">사례 (Case)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Card>
 
-          {filteredItems.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              검색 결과가 없습니다.
-            </div>
-          )}
-        </Card>
+            {/* Items List */}
+            <Card className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold">
+                  총 {filteredItems.length}개 항목
+                </h2>
+                <div className="flex gap-2">
+                  <Badge variant="secondary">Intent: {items.filter(i => i.type === "intent").length}</Badge>
+                  <Badge variant="secondary">Knowledge: {items.filter(i => i.type === "knowledge").length}</Badge>
+                  <Badge variant="secondary">Case: {items.filter(i => i.type === "case").length}</Badge>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {filteredItems.map((item) => (
+                  <Card key={item.id} className="p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant={item.type === "intent" ? "default" : item.type === "case" ? "destructive" : "secondary"}>
+                            {item.type}
+                          </Badge>
+                          <Badge variant="outline">{item.category}</Badge>
+                          <span className="text-xs text-muted-foreground">우선순위: {item.priority}</span>
+                        </div>
+                        <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {item.keywords.slice(0, 5).map((keyword, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {keyword}
+                            </Badge>
+                          ))}
+                          {item.keywords.length > 5 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{item.keywords.length - 5}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {item.responses.formal}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingItem(item);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteItem(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {filteredItems.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  검색 결과가 없습니다.
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="feedback">
+            <Card className="p-6">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  사용자 피드백 ({feedbacks.length}개)
+                </h2>
+                <Button variant="outline" onClick={loadFeedbacks}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  새로고침
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {feedbacks.map((feedback) => (
+                  <Card key={feedback.id} className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline">
+                            {new Date(feedback.created_at).toLocaleString("ko-KR", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit"
+                            })}
+                          </Badge>
+                          <Badge variant={feedback.status === "pending" ? "default" : "secondary"}>
+                            {feedback.status === "pending" ? "대기중" : feedback.status === "reviewed" ? "검토완료" : "해결완료"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{feedback.content}</p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteFeedback(feedback.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+
+              {feedbacks.length === 0 && (
+                <div className="text-center py-12 text-muted-foreground">
+                  아직 피드백이 없습니다.
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

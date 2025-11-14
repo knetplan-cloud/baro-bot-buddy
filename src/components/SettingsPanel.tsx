@@ -1,19 +1,54 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare } from "lucide-react";
 import { type ToneType } from "@/lib/chatbot-engine";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SettingsPanelProps {
   tone: ToneType;
   onToneChange: (tone: ToneType) => void;
-  onExportChat: () => void;
 }
 
-export const SettingsPanel = ({ tone, onToneChange, onExportChat }: SettingsPanelProps) => {
+export const SettingsPanel = ({ tone, onToneChange }: SettingsPanelProps) => {
+  const [feedback, setFeedback] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmitFeedback = async () => {
+    if (!feedback.trim()) {
+      toast.error("피드백 내용을 입력해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("feedback")
+        .insert({
+          content: feedback.trim(),
+          created_at: new Date().toISOString(),
+          status: "pending"
+        });
+
+      if (error) throw error;
+
+      toast.success("피드백이 전송되었습니다. 감사합니다! 🙏");
+      setFeedback("");
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      toast.error("피드백 전송에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Card className="p-6 space-y-6 bg-card border-border">
+      {/* AI 어투 설정 - 유지 */}
       <div>
         <h3 className="text-lg font-semibold mb-4">AI 어투 설정</h3>
         <RadioGroup value={tone} onValueChange={(value) => onToneChange(value as ToneType)}>
@@ -38,18 +73,28 @@ export const SettingsPanel = ({ tone, onToneChange, onExportChat }: SettingsPane
         </RadioGroup>
       </div>
 
+      {/* 피드백 입력 - 새로 추가 */}
       <div className="pt-4 border-t border-border">
-        <h3 className="text-lg font-semibold mb-4">대화 관리</h3>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <MessageSquare className="w-5 h-5" />
+          챗봇 개선 의견
+        </h3>
+        <Textarea
+          placeholder="챗봇 개선을 위한 의견이나 불편사항을 남겨주세요..."
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          rows={4}
+          className="mb-3"
+        />
         <Button
-          variant="outline"
           className="w-full"
-          onClick={onExportChat}
+          onClick={handleSubmitFeedback}
+          disabled={isSubmitting || !feedback.trim()}
         >
-          <Download className="w-4 h-4 mr-2" />
-          대화 내용 PDF로 저장
+          {isSubmitting ? "전송 중..." : "의견 제출"}
         </Button>
         <p className="text-xs text-muted-foreground mt-2">
-          현재 대화 내용을 PDF 파일로 다운로드합니다
+          여러분의 소중한 의견이 챗봇 개선에 큰 도움이 됩니다.
         </p>
       </div>
     </Card>

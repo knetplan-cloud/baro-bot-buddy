@@ -1,73 +1,157 @@
-# Welcome to your Lovable project
+# 바로빌 AI 챗봇 (Barobill AI Buddy)
 
-## Project info
+바로빌의 세금계산서 전문 AI 챗봇 "빌리"입니다.
 
-**URL**: https://lovable.dev/projects/a48a3376-1886-4e44-ab51-03f37c0fcb2b
+## 프로젝트 정보
 
-## How can I edit this code?
+- **GitHub**: https://github.com/knetplan-cloud/baro-bot-buddy
+- **Lovable 프로젝트**: https://lovable.dev/projects/a48a3376-1886-4e44-ab51-03f37c0fcb2b
 
-There are several ways of editing your application.
+## 주요 기능
 
-**Use Lovable**
+- 🤖 AI 기반 세금계산서 상담
+- 📚 지식베이스 관리 시스템
+- 📅 날짜 패턴 자동 인식 및 신고 마감일 계산
+- 💬 사용자 피드백 수집 및 관리
+- 🎯 우선순위 기반 답변 매칭
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a48a3376-1886-4e44-ab51-03f37c0fcb2b) and start prompting.
+## 로컬 개발 환경 설정
 
-Changes made via Lovable will be committed automatically to this repo.
+### 필수 요구사항
 
-**Use your preferred IDE**
+- Node.js 18+ 및 npm
+- Supabase 프로젝트 (피드백 테이블 필요)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### 설치 및 실행
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# 1. 저장소 클론
+git clone https://github.com/knetplan-cloud/baro-bot-buddy.git
+cd baro-bot-buddy
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# 2. 의존성 설치
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# 3. 환경 변수 설정
+cp .env.example .env
+# .env 파일을 열어 Supabase 정보 입력
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. 개발 서버 실행
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### 환경 변수 설정
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+`.env` 파일을 생성하고 다음 정보를 입력하세요:
 
-**Use GitHub Codespaces**
+```env
+VITE_SUPABASE_URL=https://your-project-id.supabase.co
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+**Supabase 정보 확인 방법:**
+1. Supabase 대시보드 접속
+2. Project Settings → API
+3. Project URL과 anon public key 복사
 
-## What technologies are used for this project?
+## 기술 스택
 
-This project is built with:
+- **프레임워크**: React 18 + TypeScript
+- **빌드 도구**: Vite
+- **UI 라이브러리**: shadcn-ui + Tailwind CSS
+- **백엔드**: Supabase (Database, Functions)
+- **AI**: Google Gemini (via Lovable AI Gateway)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 프로젝트 구조
 
-## How can I deploy this project?
+```
+baro-bot-buddy/
+├── src/
+│   ├── components/      # React 컴포넌트
+│   ├── pages/           # 페이지 컴포넌트
+│   ├── lib/             # 유틸리티 및 엔진
+│   │   ├── chatbot-engine.ts  # 챗봇 매칭 엔진
+│   │   └── date-utils.ts      # 날짜 처리 유틸리티
+│   ├── data/            # 지식베이스 JSON
+│   └── integrations/    # Supabase 설정
+├── supabase/
+│   ├── functions/       # Edge Functions
+│   └── migrations/      # 데이터베이스 마이그레이션
+└── KNOWLEDGE_BASE_GUIDE.md  # 지식베이스 관리 가이드
+```
 
-Simply open [Lovable](https://lovable.dev/projects/a48a3376-1886-4e44-ab51-03f37c0fcb2b) and click on Share -> Publish.
+## 주요 기능 상세
 
-## Can I connect a custom domain to my Lovable project?
+### 1. 지식베이스 관리
+- Admin 페이지 (`/admin`)에서 지식베이스 직접 관리
+- JSON 파일 직접 편집 가능
+- 자세한 가이드: [KNOWLEDGE_BASE_GUIDE.md](./KNOWLEDGE_BASE_GUIDE.md)
 
-Yes, you can!
+### 2. 날짜 패턴 인식
+- 질문에서 날짜 자동 추출
+- 신고 마감일 자동 계산
+- 동적 변수 치환 (`{date}`, `{deadline}`, `{today}`)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### 3. 피드백 시스템
+- 사용자 피드백 수집
+- Admin 페이지에서 피드백 관리
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 배포
+
+### Vercel 배포
+
+```sh
+# Vercel CLI 설치
+npm i -g vercel
+
+# 배포
+vercel
+```
+
+환경 변수는 Vercel 대시보드에서 설정하세요.
+
+### Netlify 배포
+
+```sh
+# Netlify CLI 설치
+npm i -g netlify-cli
+
+# 배포
+netlify deploy --prod
+```
+
+## 개발 워크플로우
+
+### 브랜치 전략
+
+- `main`: 안정 버전 (프로덕션)
+- `develop`: 개발 버전 (Cursor에서 작업)
+- `lovable-backup`: Lovable 버전 백업
+
+### Cursor에서 개발하기
+
+1. `develop` 브랜치로 전환
+2. 로컬에서 개발 및 테스트
+3. 커밋 및 푸시
+4. 테스트 완료 후 `main`으로 병합
+
+## Supabase 설정
+
+### 피드백 테이블 생성
+
+Supabase SQL Editor에서 다음 SQL 실행:
+
+```sql
+-- supabase/migrations/create_feedback_table.sql 파일 참고
+```
+
+자세한 내용은 [KNOWLEDGE_BASE_GUIDE.md](./KNOWLEDGE_BASE_GUIDE.md)를 참고하세요.
+
+## 문서
+
+- [지식베이스 관리 가이드](./KNOWLEDGE_BASE_GUIDE.md) - 지식베이스 작성 및 관리 방법
+- [Supabase 설정 가이드](./KNOWLEDGE_BASE_GUIDE.md#피드백-기능-사용-가이드) - 피드백 테이블 설정
+
+## 라이선스
+
+Private - 바로빌 내부 프로젝트

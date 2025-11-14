@@ -2,8 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://pvmmgamzacjzoeishjda.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2bW1nYW16YWNqem9laXNoamRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTU1OTcsImV4cCI6MjA3ODUzMTU5N30.fBYivDiGxAgRa_kmhqm9X4Q_Zo_aqu6t40B7kksvuPs";
+// 환경 변수에서 Supabase 설정 가져오기 (없으면 기본값 사용)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://pvmmgamzacjzoeishjda.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2bW1nYW16YWNqem9laXNoamRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI5NTU1OTcsImV4cCI6MjA3ODUzMTU5N30.fBYivDiGxAgRa_kmhqm9X4Q_Zo_aqu6t40B7kksvuPs";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
