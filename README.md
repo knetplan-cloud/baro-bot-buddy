@@ -98,17 +98,102 @@ baro-bot-buddy/
 
 ## 배포
 
-### Vercel 배포
+### Vercel 배포 (권장)
+
+#### 방법 1: Vercel 웹 대시보드를 통한 배포 (가장 간단)
+
+1. **Vercel 계정 생성 및 로그인**
+   - https://vercel.com 접속
+   - GitHub 계정으로 로그인
+
+2. **프로젝트 가져오기**
+   - Vercel 대시보드에서 "Add New Project" 클릭
+   - GitHub 저장소 선택: `knetplan-cloud/baro-bot-buddy`
+   - Import 클릭
+
+3. **프로젝트 설정**
+   - **Framework Preset**: Vite 선택
+   - **Root Directory**: `./` (기본값)
+   - **Build Command**: `npm run build` (자동 감지됨)
+   - **Output Directory**: `dist` (자동 감지됨)
+   - **Install Command**: `npm install` (자동 감지됨)
+
+4. **환경 변수 설정**
+   - "Environment Variables" 섹션에서 다음 변수 추가:
+     ```
+     VITE_SUPABASE_URL=https://your-project-id.supabase.co
+     VITE_SUPABASE_ANON_KEY=your_anon_key_here
+     ```
+   - 각 환경(Production, Preview, Development)에 적용
+
+5. **배포**
+   - "Deploy" 버튼 클릭
+   - 배포 완료 후 제공되는 URL로 접속 가능
+
+6. **자동 배포 설정**
+   - 기본적으로 `main` 브랜치에 푸시하면 자동 배포됨
+   - 다른 브랜치(예: `develop`)도 자동 배포하려면:
+     - Settings → Git → Production Branch를 `develop`으로 변경
+     - 또는 Settings → Git → Ignored Build Step에서 특정 브랜치 제외
+
+#### 방법 2: Vercel CLI를 통한 배포
 
 ```sh
-# Vercel CLI 설치
+# 1. Vercel CLI 설치
 npm i -g vercel
 
-# 배포
+# 2. Vercel 로그인
+vercel login
+
+# 3. 프로젝트 디렉토리에서 배포
 vercel
+
+# 4. 프로덕션 배포
+vercel --prod
 ```
 
-환경 변수는 Vercel 대시보드에서 설정하세요.
+**환경 변수 설정 (CLI):**
+```sh
+# 환경 변수 추가
+vercel env add VITE_SUPABASE_URL
+vercel env add VITE_SUPABASE_ANON_KEY
+
+# 환경 변수 확인
+vercel env ls
+```
+
+#### Vercel 배포 후 확인사항
+
+1. **빌드 로그 확인**
+   - Vercel 대시보드 → Deployments → 해당 배포 클릭
+   - Build Logs에서 빌드 오류 확인
+
+2. **환경 변수 확인**
+   - Settings → Environment Variables에서 변수 확인
+   - Production, Preview, Development 모두 설정되어 있는지 확인
+
+3. **도메인 설정 (선택사항)**
+   - Settings → Domains에서 커스텀 도메인 추가 가능
+
+4. **배포 상태 확인**
+   - 배포가 성공하면 "Ready" 상태로 표시됨
+   - URL 클릭하여 사이트 접속 테스트
+
+#### 트러블슈팅
+
+**빌드 실패 시:**
+- Build Logs에서 오류 메시지 확인
+- 환경 변수가 제대로 설정되었는지 확인
+- `package.json`의 빌드 스크립트 확인
+
+**환경 변수 미적용 시:**
+- Vercel 대시보드에서 환경 변수 재설정
+- 배포 재시도 (Redeploy)
+
+**Supabase 연결 오류 시:**
+- Supabase RLS 정책 확인
+- CORS 설정 확인
+- 환경 변수 값이 정확한지 확인
 
 ### Netlify 배포
 
